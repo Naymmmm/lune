@@ -27,8 +27,17 @@ pub enum LuauFilePath {
     Directory(PathBuf),
 }
 
+use crate::fs::{FileSystem, StdFileSystem};
+
 impl LuauFilePath {
     fn resolve(module: impl AsRef<Path>) -> Result<Self, LuaNavigateError> {
+        Self::resolve_with_fs(module, &StdFileSystem)
+    }
+
+    pub fn resolve_with_fs(
+        module: impl AsRef<Path>,
+        fs: &dyn FileSystem,
+    ) -> Result<Self, LuaNavigateError> {
         let module = module.as_ref();
 
         // Modules named "init" are ambiguous and not allowed
@@ -44,17 +53,17 @@ impl LuauFilePath {
         // Try files first
         for ext in FILE_EXTENSIONS {
             let candidate = append_extension(module, ext);
-            if candidate.is_file() && found.replace(candidate).is_some() {
+            if fs.is_file(&candidate) && found.replace(candidate).is_some() {
                 return Err(LuaNavigateError::Ambiguous);
             }
         }
 
         // Try directories with init files in them
-        if module.is_dir() {
+        if fs.is_dir(module) {
             let init = Path::new(FILE_NAME_INIT);
             for ext in FILE_EXTENSIONS {
                 let candidate = module.join(append_extension(init, ext));
-                if candidate.is_file() && found.replace(candidate).is_some() {
+                if fs.is_file(&candidate) && found.replace(candidate).is_some() {
                     return Err(LuaNavigateError::Ambiguous);
                 }
             }
@@ -68,7 +77,20 @@ impl LuauFilePath {
 
         // We have now narrowed down our resulting module
         // path to be exactly one valid path, or no path
-        found.map(Self::File).ok_or(LuaNavigateError::NotFound)
+        if let Some(path) = found {
+            return Ok(Self::File(path));
+        }
+
+        // ONE LAST CHECK:
+        // If the module itself is a file, verify it exists and return it.
+        // This is required for `lune build` to work, as the "root" chunk
+        // is the executable itself, and we need to be able to resolve it.
+        // CHECKING FOR EXACT FILE MATCH
+        if fs.is_file(module) {
+            return Ok(Self::File(module.to_path_buf()));
+        }
+
+        Err(LuaNavigateError::NotFound)
     }
 
     #[must_use]
@@ -185,8 +207,15 @@ impl LuauModulePath {
         - If the given module path does not resolve to a valid file or directory.
     */
     pub fn resolve(module: impl Into<PathBuf>) -> Result<Self, LuaNavigateError> {
+        Self::resolve_with_fs(module, &StdFileSystem)
+    }
+
+    pub fn resolve_with_fs(
+        module: impl Into<PathBuf>,
+        fs: &dyn FileSystem,
+    ) -> Result<Self, LuaNavigateError> {
         let source = module.into();
-        let target = LuauFilePath::resolve(&source)?;
+        let target = LuauFilePath::resolve_with_fs(&source, fs)?;
         Ok(Self { source, target })
     }
 

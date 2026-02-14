@@ -258,6 +258,27 @@ impl Runtime {
     }
 
     /**
+        Sets the filesystem implementation to use for `require` calls.
+
+        This overwrites the default `require` logic.
+    */
+    pub fn with_fs(
+        self,
+        fs: std::sync::Arc<dyn lune_utils::fs::FileSystem>,
+    ) -> RuntimeResult<Self> {
+        let resolver = lune_std::RequireResolver::new_with_fs(fs);
+        self.lua
+            .create_require_function(resolver)
+            .map(|f| self.lua.globals().set("require", f))?
+            .map_err(|e| {
+                RuntimeError::from(LuaError::external(format!(
+                    "Failed to inject custom require: {e:?}"
+                )))
+            })?;
+        Ok(self)
+    }
+
+    /**
         Runs some kind of custom input, inside of the current runtime.
 
         For any input that is a real module or file path, [`run_file`] should

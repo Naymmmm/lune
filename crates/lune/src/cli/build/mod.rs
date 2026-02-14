@@ -31,6 +31,10 @@ pub struct BuildCommand {
     /// defaults to the os and arch of the current system
     #[clap(short, long)]
     pub target: Option<BuildTarget>,
+
+    /// A list of files or directories to embed in the executable
+    #[clap(short, long)]
+    pub embed: Vec<PathBuf>,
 }
 
 impl BuildCommand {
@@ -61,6 +65,36 @@ impl BuildCommand {
             .await
             .context("failed to read input file")?;
 
+        // Collect extra files to embed
+        let mut extra_files = Vec::new();
+        for path in &self.embed {
+            if path.is_dir() {
+                // If directory, walk it recursively
+                for entry in walkdir::WalkDir::new(path) {
+                    let entry = entry?;
+                    if entry.file_type().is_file() {
+                        let file_path = entry.path();
+                        let content = fs::read(file_path).await?;
+                        // Store path as relative to CWD (or just as provided if relative)
+                        // Use to_string_lossy and replace / with \ for zip compatibility?
+                        // Zip uses forward slashes.
+                        let name = file_path.to_string_lossy().replace('\\', "/");
+                        extra_files.push((name, content));
+                    }
+                }
+            } else if path.is_file() {
+                let content = fs::read(path).await?;
+                let name = path.to_string_lossy().replace('\\', "/");
+                extra_files.push((name, content));
+            } else {
+                eprintln!(
+                    "{}: Path '{}' does not exist or is not readable, skipping...",
+                    style("Warning").yellow().bold(),
+                    path.display()
+                );
+            }
+        }
+
         // Derive the base executable path based on the arguments provided
         let base_exe_path = get_or_download_base_executable(target).await?;
 
@@ -69,7 +103,7 @@ impl BuildCommand {
             "Compiling standalone binary from {}",
             style(self.input.display()).green()
         );
-        let patched_bin = Metadata::create_env_patched_bin(base_exe_path, source_code)
+        let patched_bin = Metadata::create_env_patched_bin(base_exe_path, source_code, extra_files)
             .await
             .context("failed to create patched binary")?;
 

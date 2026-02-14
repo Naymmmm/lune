@@ -4,6 +4,7 @@ mod table_builder;
 mod version_string;
 
 pub mod fmt;
+pub mod fs;
 pub mod path;
 pub mod process;
 

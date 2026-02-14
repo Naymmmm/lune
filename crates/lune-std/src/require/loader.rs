@@ -8,9 +8,11 @@ use std::{
 use async_channel::{Receiver, Sender};
 use async_fs::read as read_file;
 
+use lune_utils::fs::FileSystem;
 use lune_utils::path::constants::FILE_CHUNK_PREFIX;
 use mlua::prelude::*;
 use mlua_luau_scheduler::LuaSchedulerExt;
+use std::sync::Arc;
 
 type RequireResult = LuaResult<LuaMultiValue>;
 type RequireResultSender = Sender<RequireResult>;
@@ -71,6 +73,7 @@ impl RequireLoader {
         lua: &Lua,
         relative_path: &Path,
         absolute_path: &Path,
+        fs: Arc<dyn FileSystem>,
     ) -> LuaResult<LuaFunction> {
         let relative_path = relative_path.to_path_buf();
         let absolute_path = absolute_path.to_path_buf();
@@ -80,6 +83,7 @@ impl RequireLoader {
         lua.create_async_function(move |lua, (): ()| {
             let relative_path = relative_path.clone();
             let absolute_path = absolute_path.clone();
+            let fs = fs.clone();
 
             let state = state.clone();
 
@@ -93,7 +97,8 @@ impl RequireLoader {
                     let tx = state.create_pending_at_path(&absolute_path);
 
                     let chunk_name = format!("{FILE_CHUNK_PREFIX}{}", relative_path.display());
-                    let chunk_bytes = read_file(&absolute_path).await?;
+                    // use fs.read instead of async_fs::read
+                    let chunk_bytes = fs.read(&absolute_path).map_err(LuaError::external)?;
 
                     let chunk = lua.load(chunk_bytes).set_name(chunk_name);
 
