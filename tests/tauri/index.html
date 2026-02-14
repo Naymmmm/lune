@@ -1,0 +1,128 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Lune File Browser</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: #e0e0e0;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container { max-width: 900px; margin: 0 auto; }
+        h1 {
+            font-size: 24px;
+            margin-bottom: 20px;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        h1::before { content: "📂"; }
+        .path-bar {
+            background: rgba(255,255,255,0.1);
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            font-family: monospace;
+            color: #00d4ff;
+        }
+        .file-list {
+            background: rgba(255,255,255,0.05);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+        .file-item {
+            display: flex;
+            align-items: center;
+            padding: 12px 16px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .file-item:hover { background: rgba(255,255,255,0.1); }
+        .file-item:last-child { border-bottom: none; }
+        .file-icon { font-size: 20px; margin-right: 12px; }
+        .file-name { flex: 1; }
+        .dir { color: #ffd700; }
+        .file { color: #e0e0e0; }
+        .loading { text-align: center; padding: 40px; color: #888; }
+        .back-btn {
+            background: rgba(0, 212, 255, 0.2);
+            border: none;
+            color: #00d4ff;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin-bottom: 16px;
+        }
+        .back-btn:hover { background: rgba(0, 212, 255, 0.3); }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Lune File Browser</h1>
+        <button class="back-btn" id="back-btn">⬅ Back</button>
+        <div class="path-bar" id="path-bar">.</div>
+        <div class="file-list" id="file-list">
+            <div class="loading">Loading...</div>
+        </div>
+    </div>
+
+    <script>
+        const { emit, listen } = window.__TAURI__.event;
+
+        let currentPath = ".";
+
+        function renderFiles(data) {
+            const list = document.getElementById("file-list");
+            const pathBar = document.getElementById("path-bar");
+            pathBar.textContent = data.currentPath;
+            currentPath = data.currentPath;
+
+            if (data.items.length === 0) {
+                list.innerHTML = '<div class="loading">Empty folder</div>';
+                return;
+            }
+
+            list.innerHTML = data.items.map(item => `
+                <div class="file-item ${item.isDir ? 'dir' : 'file'}" data-path="${item.path}" data-isdir="${item.isDir}">
+                    <span class="file-icon">${item.isDir ? '📁' : '📄'}</span>
+                    <span class="file-name">${item.name}</span>
+                </div>
+            `).join('');
+
+            list.querySelectorAll('.file-item').forEach(el => {
+                el.addEventListener('click', () => {
+                    if (el.dataset.isdir === 'true') {
+                        emit('read-dir', el.dataset.path);
+                    }
+                });
+            });
+        }
+
+        document.getElementById('back-btn').addEventListener('click', () => {
+            const parts = currentPath.replace(/\\/g, '/').split('/');
+            if (parts.length > 1) {
+                parts.pop();
+                emit('read-dir', parts.join('/') || '.');
+            }
+        });
+
+        listen('read-dir-response', (event) => {
+            renderFiles(event.payload);
+        });
+
+        listen('error', (event) => {
+            document.getElementById('file-list').innerHTML = 
+                `<div class="loading" style="color: #ff6b6b;">Error: ${event.payload}</div>`;
+        });
+
+        // Initial load
+        emit('read-dir', '.');
+    </script>
+</body>
+</html>

@@ -1,0 +1,10 @@
+   Compiling lune-std-tauri v0.0.1 (D:\Repos\lune\crates\lune-std-tauri)
+error: proc macro panicked
+  --> crates\lune-std-tauri\src\lib.rs:30:27
+   |
+30 |             let context = tauri::generate_context!("tauri.conf.json");
+   |                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: message: failed to parse icon D:\Repos\lune\crates\lune-std-tauri\icons/icon.ico: failed to fill whole buffer
+
+error: could not compile `lune-std-tauri` (lib) due to 1 previous error

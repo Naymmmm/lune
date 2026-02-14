@@ -1,0 +1,44 @@
+{
+    "productName": "lune-app",
+    "version": "0.1.0",
+    "identifier": "org.lune.app",
+    "build": {
+        "beforeDevCommand": "",
+        "beforeBuildCommand": "",
+        "frontendDist": "../dist"
+    },
+    "bundle": {
+        "active": false,
+        "targets": "all",
+        "icon": [],
+        "resources": [],
+        "copyright": "",
+        "category": "DeveloperTool",
+        "shortDescription": "",
+        "longDescription": "",
+        "macOS": {
+            "frameworks": [],
+            "entitlements": null,
+            "exceptionDomain": "",
+            "signingIdentity": null,
+            "providerShortName": null
+        },
+        "externalBin": []
+    },
+    "app": {
+        "withGlobalTauri": true,
+        "windows": [
+            {
+                "title": "Lune App",
+                "label": "main",
+                "width": 800,
+                "height": 600,
+                "resizable": true,
+                "fullscreen": false
+            }
+        ],
+        "security": {
+            "csp": null
+        }
+    }
+}

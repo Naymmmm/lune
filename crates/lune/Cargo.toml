@@ -1,6 +1,6 @@
 [package]
 name = "lune"
-version = "0.10.4"
+version = "0.10.4-tauri"
 edition = "2024"
 license = "MPL-2.0"
 repository = "https://github.com/lune-org/lune"
@@ -30,6 +30,7 @@ std-roblox = ["dep:lune-std", "lune-std/roblox"]
 std-serde = ["dep:lune-std", "lune-std/serde"]
 std-stdio = ["dep:lune-std", "lune-std/stdio"]
 std-task = ["dep:lune-std", "lune-std/task"]
+std-tauri = ["dep:lune-std", "lune-std/tauri"]
 
 std = [
     "std-datetime",
@@ -42,6 +43,7 @@ std = [
     "std-serde",
     "std-stdio",
     "std-task",
+    "std-tauri",
 ]
 
 cli = ["dep:clap", "dep:rustyline", "dep:zip", "dep:lune-std-net"]
@@ -72,6 +74,7 @@ tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 lune-std = { optional = true, version = "0.3.4", path = "../lune-std" }
 lune-std-net = { optional = true, version = "0.3.4", path = "../lune-std-net" }
 lune-utils = { version = "0.3.4", path = "../lune-utils" }
+regex = "1"
 
 ### CLI
 

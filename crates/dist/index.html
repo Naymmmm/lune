@@ -1,0 +1,115 @@
+<!doctype html>
+<html>
+<head>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; padding: 20px; background-color: #f6f6f6; color: #333; }
+        .container { max-width: 800px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1 { margin-top: 0; font-size: 24px; color: #333; }
+        
+        .controls { display: flex; gap: 10px; margin-bottom: 20px; align-items: center; }
+        input[type="text"] { flex: 1; padding: 8px; border: 1px solid #ddd; border-radius: 4px; }
+        button { padding: 8px 16px; background: #007aff; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        button:hover { background: #0056b3; }
+        button.secondary { background: #e0e0e0; color: #333; }
+        button.secondary:hover { background: #d0d0d0; }
+
+        #file-list { list-style: none; padding: 0; margin: 0; border: 1px solid #eee; border-radius: 4px; }
+        .file-item { padding: 10px; border-bottom: 1px solid #eee; display: flex; align-items: center; cursor: pointer; transition: background 0.2s; }
+        .file-item:last-child { border-bottom: none; }
+        .file-item:hover { background-color: #f9f9f9; }
+        .icon { margin-right: 10px; font-size: 18px; width: 20px; text-align: center; }
+        .name { flex: 1; }
+        
+        .error { color: red; margin: 10px 0; padding: 10px; background: #ffebeb; border-radius: 4px; display: none; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Lune File Browser</h1>
+        
+        <div class="error" id="error-msg"></div>
+
+        <div class="controls">
+            <button class="secondary" id="btn-up">⬆ Up</button>
+            <input type="text" id="path-input" value="." readonly>
+            <button id="btn-refresh">Refresh</button>
+        </div>
+
+        <ul id="file-list">
+            <!-- Files will be populated here -->
+            <li class="file-item" style="color: #666; font-style: italic; padding: 20px; justify-content: center;">Loading...</li>
+        </ul>
+    </div>
+
+    <script>
+        const { emit, listen } = window.__TAURI__.event;
+
+        let currentPath = '.';
+        
+        const pathInput = document.getElementById('path-input');
+        const fileList = document.getElementById('file-list');
+        const errorMsg = document.getElementById('error-msg');
+
+        function sendReadDir(path) {
+            errorMsg.style.display = 'none';
+            fileList.innerHTML = '<li class="file-item" style="color: #666; font-style: italic; padding: 20px; justify-content: center;">Loading...</li>';
+            emit('read-dir', path);
+        }
+
+        // Handle response
+        listen('read-dir-response', (event) => {
+            const data = event.payload;
+            currentPath = data.currentPath;
+            pathInput.value = currentPath;
+            
+            fileList.innerHTML = '';
+            
+            if (data.items.length === 0) {
+                 fileList.innerHTML = '<li class="file-item" style="color: #666; padding: 20px; justify-content: center;">Empty directory</li>';
+                 return;
+            }
+
+            data.items.forEach(item => {
+                const li = document.createElement('li');
+                li.className = 'file-item';
+                
+                const icon = item.isDir ? '📁' : '📄';
+                li.innerHTML = `<span class="icon">${icon}</span> <span class="name">${item.name}</span>`;
+                
+                li.onclick = () => {
+                    if (item.isDir) {
+                        sendReadDir(item.path);
+                    }
+                };
+                
+                fileList.appendChild(li);
+            });
+        });
+
+        listen('error', (event) => {
+             errorMsg.textContent = event.payload;
+             errorMsg.style.display = 'block';
+             fileList.innerHTML = '';
+        });
+
+        // Controls
+        document.getElementById('btn-refresh').onclick = () => sendReadDir(currentPath);
+        
+        document.getElementById('btn-up').onclick = () => {
+             // Simple parent extraction
+             const parts = currentPath.split(/[/\\]/);
+             if (parts.length > 1) {
+                 if (parts[parts.length - 1] === '') parts.pop(); // handle trailing slash
+                 parts.pop();
+                 const newPath = parts.join('/') || '.';
+                 sendReadDir(newPath);
+             } else {
+                 sendReadDir('.');
+             }
+        };
+
+        // Initial load
+        setTimeout(() => sendReadDir('.'), 500); // Small delay to ensure backend is ready
+    </script>
+</body>
+</html>

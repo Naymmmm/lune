@@ -8,10 +8,12 @@ pub(crate) mod list;
 pub(crate) mod repl;
 pub(crate) mod run;
 pub(crate) mod setup;
+pub(crate) mod tauri;
 pub(crate) mod utils;
 
 pub use self::{
-    build::BuildCommand, list::ListCommand, repl::ReplCommand, run::RunCommand, setup::SetupCommand,
+    build::BuildCommand, list::ListCommand, repl::ReplCommand, run::RunCommand,
+    setup::SetupCommand, tauri::TauriCommand,
 };
 
 #[derive(Debug, Clone, Subcommand)]
@@ -21,6 +23,7 @@ pub enum CliSubcommand {
     Setup(SetupCommand),
     Build(BuildCommand),
     Repl(ReplCommand),
+    Tauri(TauriCommand),
 }
 
 impl Default for CliSubcommand {
@@ -75,6 +78,7 @@ impl Cli {
             CliSubcommand::Setup(cmd) => cmd.run().await,
             CliSubcommand::Build(cmd) => cmd.run().await,
             CliSubcommand::Repl(cmd) => cmd.run().await,
+            CliSubcommand::Tauri(cmd) => cmd.run().await,
         }
     }
 }

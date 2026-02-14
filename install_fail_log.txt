@@ -1,0 +1,45 @@
+   Compiling lune-std-tauri v0.0.1 (D:\Repos\lune\crates\lune-std-tauri)
+   Compiling lune-std v0.3.4 (D:\Repos\lune\crates\lune-std)
+error[E0428]: the name `Task` is defined multiple times
+  --> crates\lune-std\src\library.rs:20:34
+   |
+15 |     #[cfg(feature = "task")]     Task,
+   |                                  ---- previous definition of the type `Task` here
+...
+20 |     #[cfg(feature = "task")]     Task,
+   |                                  ^^^^ `Task` redefined here
+   |
+   = note: `Task` must be defined only once in the type namespace of this enum
+
+error[E0004]: non-exhaustive patterns: `&LuneStandardLibrary::Task` not covered
+  --> crates\lune-std\src\library.rs:8:10
+   |
+ 8 | #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq)]
+   |          ^^^^^ pattern `&LuneStandardLibrary::Task` not covered
+   |
+note: `LuneStandardLibrary` defined here
+  --> crates\lune-std\src\library.rs:10:10
+   |
+10 | pub enum LuneStandardLibrary {
+   |          ^^^^^^^^^^^^^^^^^^^
+...
+20 |     #[cfg(feature = "task")]     Task,
+   |                                  ---- not covered
+   = note: the matched value is of type `&LuneStandardLibrary`
+
+warning: unreachable pattern
+   --> crates\lune-std\src\library.rs:147:42
+    |
+142 |             #[cfg(feature = "task")]     "task"     => Self::Task,
+    |                                          ------ matches all the relevant values
+...
+147 |             #[cfg(feature = "task")]     "task"     => Self::Task,
+    |                                          ^^^^^^ no value can reach this
+    |
+    = note: `#[warn(unreachable_patterns)]` (part of `#[warn(unused)]`) on by default
+
+Some errors have detailed explanations: E0004, E0428.
+For more information about an error, try `rustc --explain E0004`.
+warning: `lune-std` (lib) generated 1 warning
+error: could not compile `lune-std` (lib) due to 2 previous errors; 1 warning emitted
+warning: build failed, waiting for other jobs to finish...

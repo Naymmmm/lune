@@ -31,7 +31,12 @@ pub async fn run(patched_bin: impl AsRef<[u8]>) -> Result<ExitCode> {
 
     let mut rt = Runtime::new()?.with_args(args);
 
-    let result = rt.run_custom("STANDALONE", meta.bytecode).await;
+    let chunk_name = std::env::current_exe()
+        .ok()
+        .and_then(|p| p.to_str().map(|s| format!("@{}", s)))
+        .unwrap_or_else(|| "@standalone".to_string());
+
+    let result = rt.run_custom(&chunk_name, meta.bytecode).await;
 
     Ok(match result {
         Err(err) => {
